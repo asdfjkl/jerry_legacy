@@ -33,7 +33,7 @@ import static java.lang.Math.min;
 import static org.asdfjkl.jerryfx.lib.CONSTANTS.EMPTY;
 import static org.asdfjkl.jerryfx.lib.CONSTANTS.FRINGE;
 
-public class EnterPosBoard extends Canvas {
+public class EnterPosBoard extends CanvasProperties {
 
     private final ArrayList<EnterPosBoardListener> enterPosBoardListeners = new ArrayList<>();
 
@@ -72,7 +72,7 @@ public class EnterPosBoard extends Canvas {
 
         this.boardStyle = new BoardStyle();
         this.board = board;
-        this.pieceImageProvider = new PieceImageProvider();
+        this.pieceImageProvider = PieceImageProvider.getInstance();
         this.outputScaleX = Screen.getPrimary().getOutputScaleX();
         this.grabbedPiece.setPiece(-1);
 
@@ -84,21 +84,6 @@ public class EnterPosBoard extends Canvas {
 
 
     @Override
-    public boolean isResizable() {
-        return true;
-    }
-
-    @Override
-    public double maxHeight(double width) {
-        return Double.POSITIVE_INFINITY;
-    }
-
-    @Override
-    public double maxWidth(double height) {
-        return Double.POSITIVE_INFINITY;
-    }
-
-    @Override
     public double minWidth(double height) {
         return Math.max(this.getHeight() * 1.5,150D);
     }
@@ -108,13 +93,6 @@ public class EnterPosBoard extends Canvas {
         return 80D;
     }
 
-    @Override
-    public void resize(double width, double height) {
-        this.setWidth(width);
-        this.setHeight(height);
-
-        updateCanvas();
-    }
 
     boolean clickedOnBoard(double x, double y) {
 
@@ -139,6 +117,7 @@ public class EnterPosBoard extends Canvas {
         }
     }
 
+    @Override
     public void updateCanvas() {
 
         GraphicsContext gc = this.getGraphicsContext2D();

@@ -119,36 +119,28 @@ public class GameMenuController {
                         return;
                     }
                 } else {  // indices > 1, show db dialog
-                    DialogDatabase dlg = new DialogDatabase();
-                    gameModel.getPgnDatabase().filename = file.getAbsolutePath();
-                    //gameModel.getPgnDatabase().open(file.getAbsolutePath());
-                    boolean accepted = dlg.show(gameModel, true);
-                    if(accepted) {
-                        int gameIndex = dlg.table.getSelectionModel().getSelectedIndex();
-                        gameModel.currentPgnDatabaseIdx = gameIndex;
-                        Game g = gameModel.getPgnDatabase().loadGame(gameIndex);
-                        gameModel.setGame(g);
-                        g.setHeaderWasChanged(true);
-                        g.setTreeWasChanged(true);
-                        gameModel.triggerStateChange();
-                    }
+                    showDbDialog(file);
                 }
             } else { // for larger files, we always assume there is more than one game
                 // then show database dialog
-                DialogDatabase dlg = new DialogDatabase();
-                gameModel.getPgnDatabase().filename = file.getAbsolutePath();
-                //gameModel.getPgnDatabase().open(file.getAbsolutePath());
-                boolean accepted = dlg.show(gameModel, true);
-                if(accepted) {
-                    int gameIndex = dlg.table.getSelectionModel().getSelectedIndex();
-                    gameModel.currentPgnDatabaseIdx = gameIndex;
-                    Game g = gameModel.getPgnDatabase().loadGame(gameIndex);
-                    gameModel.setGame(g);
-                    g.setHeaderWasChanged(true);
-                    g.setTreeWasChanged(true);
-                    gameModel.triggerStateChange();
-                }
+                showDbDialog(file);
             }
+        }
+    }
+
+    private void showDbDialog(File file) {
+        DialogDatabase dlg = new DialogDatabase();
+        gameModel.getPgnDatabase().filename = file.getAbsolutePath();
+        //gameModel.getPgnDatabase().open(file.getAbsolutePath());
+        boolean accepted = dlg.show(gameModel, true);
+        if(accepted) {
+            int gameIndex = dlg.table.getSelectionModel().getSelectedIndex();
+            gameModel.currentPgnDatabaseIdx = gameIndex;
+            Game g = gameModel.getPgnDatabase().loadGame(gameIndex);
+            gameModel.setGame(g);
+            g.setHeaderWasChanged(true);
+            g.setTreeWasChanged(true);
+            gameModel.triggerStateChange();
         }
     }
 

@@ -34,6 +34,16 @@ import static org.asdfjkl.jerryfx.gui.BoardStyle.*;
 
 public class PieceImageProvider {
 
+    private static PieceImageProvider pieceImageProvider = null;
+
+    private PieceImageProvider() {}
+    public static PieceImageProvider getInstance() {
+        if(pieceImageProvider == null) {
+            pieceImageProvider = new PieceImageProvider();
+        }
+        return pieceImageProvider;
+    }
+
     final HashMap<Integer, Image> whitePawnsMerida = new HashMap<>();
     final HashMap<Integer, Image> blackPawnsMerida = new HashMap<>();
 
@@ -92,23 +102,23 @@ public class PieceImageProvider {
 
         SVGUniverse svgUniverse = new SVGUniverse();
         SVGDiagram diagram = null;
-        BufferedImage bi = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
+        BufferedImage bufferedImage = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
         try {
             diagram = svgUniverse.getDiagram(svgUniverse.loadSVG(urlPieceSVG));
             diagram.setIgnoringClipHeuristic(true);
-            AffineTransform at = new AffineTransform();
-            at.setToScale(width/diagram.getWidth(), height/diagram.getWidth());
-            Graphics2D ig2 = bi.createGraphics();
-            ig2.transform(at);
-            ig2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-            diagram.render(ig2);
+            AffineTransform affineTransform = new AffineTransform();
+            affineTransform.setToScale(width/diagram.getWidth(), height/diagram.getWidth());
+            Graphics2D graphics2DImg = bufferedImage.createGraphics();
+            graphics2DImg.transform(affineTransform);
+            graphics2DImg.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            diagram.render(graphics2DImg);
         } catch (SVGException e) {
             e.printStackTrace();
         }
-        return bi;
+        return bufferedImage;
     }
 
-    private HashMap<Integer, Image> getHashMap(int pieceType, int pieceStyle) {
+    private HashMap<Integer, Image> getPieceStyleHashMap(int pieceType, int pieceStyle) {
         if(pieceType == CONSTANTS.WHITE_PAWN) {
             if(pieceStyle == PIECE_STYLE_MERIDA) {
                 return whitePawnsMerida;
@@ -246,66 +256,66 @@ public class PieceImageProvider {
 
     private String getFilename(int pieceType) {
 
-            if(pieceType == CONSTANTS.WHITE_PAWN) {
-                return "wp.svg";
-            }
-            if(pieceType == CONSTANTS.BLACK_PAWN) {
-                return "bp.svg";
-            }
-            if(pieceType == CONSTANTS.WHITE_ROOK) {
-                return "wr.svg";
-            }
-            if(pieceType == CONSTANTS.BLACK_ROOK) {
-                return "br.svg";
-            }
-            if(pieceType == CONSTANTS.WHITE_KNIGHT) {
-                return "wn.svg";
-            }
-            if(pieceType == CONSTANTS.BLACK_KNIGHT) {
-                return "bn.svg";
-            }
-            if(pieceType == CONSTANTS.WHITE_BISHOP) {
-                return "wb.svg";
-            }
-            if(pieceType == CONSTANTS.BLACK_BISHOP) {
-                return "bb.svg";
-            }
-            if(pieceType == CONSTANTS.WHITE_QUEEN) {
-                return "wq.svg";
-            }
-            if(pieceType == CONSTANTS.BLACK_QUEEN) {
-                return "bq.svg";
-            }
-            if(pieceType == CONSTANTS.WHITE_KING) {
-                return "wk.svg";
-            }
-            if(pieceType == CONSTANTS.BLACK_KING) {
-                return "bk.svg";
-            }
-            throw  new IllegalArgumentException("called with, but there is no such piece: "+pieceType);
+        if(pieceType == CONSTANTS.WHITE_PAWN) {
+            return "wp.svg";
+        }
+        if(pieceType == CONSTANTS.BLACK_PAWN) {
+            return "bp.svg";
+        }
+        if(pieceType == CONSTANTS.WHITE_ROOK) {
+            return "wr.svg";
+        }
+        if(pieceType == CONSTANTS.BLACK_ROOK) {
+            return "br.svg";
+        }
+        if(pieceType == CONSTANTS.WHITE_KNIGHT) {
+            return "wn.svg";
+        }
+        if(pieceType == CONSTANTS.BLACK_KNIGHT) {
+            return "bn.svg";
+        }
+        if(pieceType == CONSTANTS.WHITE_BISHOP) {
+            return "wb.svg";
+        }
+        if(pieceType == CONSTANTS.BLACK_BISHOP) {
+            return "bb.svg";
+        }
+        if(pieceType == CONSTANTS.WHITE_QUEEN) {
+            return "wq.svg";
+        }
+        if(pieceType == CONSTANTS.BLACK_QUEEN) {
+            return "bq.svg";
+        }
+        if(pieceType == CONSTANTS.WHITE_KING) {
+            return "wk.svg";
+        }
+        if(pieceType == CONSTANTS.BLACK_KING) {
+            return "bk.svg";
+        }
+        throw  new IllegalArgumentException("called with, but there is no such piece: "+pieceType);
     }
 
 
     public Image getImage(int piece, int squareSize, int pieceStyle) {
 
-        HashMap<Integer, Image> pieceHashMap = getHashMap(piece, pieceStyle);
+        HashMap<Integer, Image> pieceHashMap = getPieceStyleHashMap(piece, pieceStyle);
         String svgPieceName = getFilename(piece);
 
         if(pieceHashMap.containsKey(squareSize)) {
             return pieceHashMap.get(squareSize);
         } else {
-            String fn = "pieces/";
+            String fileName = "pieces/";
             if(pieceStyle == PIECE_STYLE_MERIDA) {
-                fn += "merida/";
+                fileName += "merida/";
             }
             if(pieceStyle == PIECE_STYLE_OLD) {
-                fn += "old/";
+                fileName += "old/";
             }
             if(pieceStyle == PIECE_STYLE_USCF) {
-                fn += "uscf/";
+                fileName += "uscf/";
             }
-            fn += svgPieceName;
-            URL urlSVG = getClass().getClassLoader().getResource(fn);
+            fileName += svgPieceName;
+            URL urlSVG = getClass().getClassLoader().getResource(fileName);
             BufferedImage bufferedImagePiece = renderSVG(urlSVG, squareSize, squareSize);
             Image img = SwingFXUtils.toFXImage(bufferedImagePiece, null);
             pieceHashMap.put(squareSize, img);

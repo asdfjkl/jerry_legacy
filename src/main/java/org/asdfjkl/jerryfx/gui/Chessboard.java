@@ -32,7 +32,7 @@ import java.util.ArrayList;
 
 import static org.asdfjkl.jerryfx.lib.CONSTANTS.*;
 
-public class Chessboard extends Canvas implements StateChangeListener {
+public class Chessboard extends CanvasProperties implements StateChangeListener {
 
     BoardStyle boardStyle;
     final double outputScaleX;
@@ -63,7 +63,7 @@ public class Chessboard extends Canvas implements StateChangeListener {
 
         boardStyle = new BoardStyle();
         this.gameModel = gameModel;
-        pieceImageProvider = new PieceImageProvider();
+        pieceImageProvider = PieceImageProvider.getInstance();
         outputScaleX = Screen.getPrimary().getOutputScaleX();
         grabbedPiece.setPiece(-1);
         moveSource = new Point(-1,-1);
@@ -89,49 +89,18 @@ public class Chessboard extends Canvas implements StateChangeListener {
     }
 
 
-    @Override
-    public boolean isResizable() {
-        return true;
-    }
 
     @Override
-    public double maxHeight(double width) {
-        return Double.POSITIVE_INFINITY;
-    }
-
-    @Override
-    public double maxWidth(double height) {
-        return Double.POSITIVE_INFINITY;
-    }
-
-    @Override
-    public double minWidth(double height) {
-        return 50D;
-    }
-
-    @Override
-    public double minHeight(double width) {
-        return 50D;
-    }
-
-    @Override
-    public void resize(double width, double height) {
-        this.setWidth(width);
-        this.setHeight(height);
-
-        updateCanvas();
-    }
-
     public void updateCanvas() {
 
-        GraphicsContext gc = this.getGraphicsContext2D();
+        GraphicsContext graphicsContext = this.getGraphicsContext2D();
 
         // fill background
-        gc.beginPath();
+        graphicsContext.beginPath();
         //gc.setFill(Color.rgb(152, 152, 152));
-        gc.setFill(boardStyle.getDarkSquareColor());
-        gc.rect(0, 0, this.getWidth(), this.getHeight());
-        gc.fill();
+        graphicsContext.setFill(boardStyle.getDarkSquareColor());
+        graphicsContext.rect(0, 0, this.getWidth(), this.getHeight());
+        graphicsContext.fill();
 
         // size of real board incl. corner
         double height = this.getHeight();
@@ -154,10 +123,10 @@ public class Chessboard extends Canvas implements StateChangeListener {
         innerYOffset = (outerMargin + borderMargin);
 
         // paint board inc. margin with letters & numbers
-        gc.beginPath();
-        gc.setFill(boardStyle.getBorderColor());
-        gc.rect(xOffset, outerMargin, (squareSize*8)+(borderMargin*2), (squareSize*8)+(borderMargin*2));
-        gc.fill();
+        graphicsContext.beginPath();
+        graphicsContext.setFill(boardStyle.getBorderColor());
+        graphicsContext.rect(xOffset, outerMargin, (squareSize*8)+(borderMargin*2), (squareSize*8)+(borderMargin*2));
+        graphicsContext.fill();
 
         // get the from and to field of the last move
         // to highlight those squares
@@ -193,10 +162,10 @@ public class Chessboard extends Canvas implements StateChangeListener {
                 }
                 int y = (innerYOffset) + ((7-j)*squareSize);
 
-                gc.beginPath();
-                gc.setFill(fieldColor);
-                gc.rect(x,y,squareSize,squareSize);
-                gc.fill();
+                graphicsContext.beginPath();
+                graphicsContext.setFill(fieldColor);
+                graphicsContext.rect(x,y,squareSize,squareSize);
+                graphicsContext.fill();
 
                 if(lastMoveFrom != null && lastMoveTo != null) {
                     boolean markField = false;
@@ -213,10 +182,10 @@ public class Chessboard extends Canvas implements StateChangeListener {
                         }
                     }
                     if(markField) {
-                        gc.beginPath();
-                        gc.setFill(lastMoveColor);
-                        gc.rect(x, y, squareSize, squareSize);
-                        gc.fill();
+                        graphicsContext.beginPath();
+                        graphicsContext.setFill(lastMoveColor);
+                        graphicsContext.rect(x, y, squareSize, squareSize);
+                        graphicsContext.fill();
                     }
                 }
             }
@@ -225,41 +194,41 @@ public class Chessboard extends Canvas implements StateChangeListener {
         // paint colored fields
         for(ColoredField coloredField : gameModel.getGame().getCurrentNode().getColoredFields()) {
 
-            int i = coloredField.x;
-            int j = coloredField.y;
+            int xColoredField = coloredField.x;
+            int yColoredField = coloredField.y;
 
-            int x = (innerXOffset) + (i*squareSize);
-            int y = (innerYOffset) + ((7-j)*squareSize);
+            int x = (innerXOffset) + (xColoredField*squareSize);
+            int y = (innerYOffset) + ((7-yColoredField)*squareSize);
             if(flipBoard) {
-                x = innerXOffset+((7-i)*squareSize);
-                y = (innerYOffset) + (j*squareSize);
+                x = innerXOffset+((7-xColoredField)*squareSize);
+                y = (innerYOffset) + (yColoredField*squareSize);
             }
 
-            gc.beginPath();
-            gc.setFill(coloredFieldColor);
-            gc.rect(x,y,squareSize,squareSize);
-            gc.fill();
+            graphicsContext.beginPath();
+            graphicsContext.setFill(coloredFieldColor);
+            graphicsContext.rect(x,y,squareSize,squareSize);
+            graphicsContext.fill();
         }
 
         // draw the board coordinates
-        gc.setFill(boardStyle.getCoordinateColor());
+        graphicsContext.setFill(boardStyle.getCoordinateColor());
         for(int i=0;i<8;i++) {
             if(flipBoard){
                 char ch = (char) (65 + (7 - i));
                 String idx = Character.toString(ch);
                 String num = Integer.toString(i + 1);
-                gc.beginPath();
-                gc.fillText(idx, innerXOffset + (i * squareSize) + (squareSize / 2) - 4,
+                graphicsContext.beginPath();
+                graphicsContext.fillText(idx, innerXOffset + (i * squareSize) + (squareSize / 2) - 4,
                         innerYOffset + (8 * squareSize) + (borderMargin * 0.8));
-                gc.fillText(num, xOffset + 5, innerYOffset + (i * squareSize) + (squareSize / 2) + 4);
+                graphicsContext.fillText(num, xOffset + 5, innerYOffset + (i * squareSize) + (squareSize / 2) + 4);
             } else{
                 char ch = (char) (65 + i);
                 String idx = Character.toString(ch);
                 String num = Integer.toString(8 - i);
-                gc.beginPath();
-                gc.fillText(idx, innerXOffset + (i * squareSize) + (squareSize / 2) - 4,
+                graphicsContext.beginPath();
+                graphicsContext.fillText(idx, innerXOffset + (i * squareSize) + (squareSize / 2) - 4,
                         innerYOffset + (8 * squareSize) + (borderMargin * 0.8));
-                gc.fillText(num, xOffset + 5, innerYOffset + (i * squareSize) + (squareSize / 2) + 4);
+                graphicsContext.fillText(num, xOffset + 5, innerYOffset + (i * squareSize) + (squareSize / 2) + 4);
             }
         }
 
@@ -287,13 +256,13 @@ public class Chessboard extends Canvas implements StateChangeListener {
                         if (!(drawGrabbedPiece && i == moveSource.x && j == moveSource.y)) {
                             Image pieceImage = pieceImageProvider.getImage(piece, (int) (squareSize * this.outputScaleX),
                                     boardStyle.getPieceStyle());
-                            gc.drawImage(pieceImage, x, y, squareSize, squareSize);
+                            graphicsContext.drawImage(pieceImage, x, y, squareSize, squareSize);
                         }
                     } else {
                         if (!(drawGrabbedPiece && i == moveSource.x && (7-j) == moveSource.y)) {
                             Image pieceImage = pieceImageProvider.getImage(piece, (int) (squareSize * this.outputScaleX),
                                     boardStyle.getPieceStyle());
-                            gc.drawImage(pieceImage, x, y, squareSize, squareSize);
+                            graphicsContext.drawImage(pieceImage, x, y, squareSize, squareSize);
                         }
                     }
                 }
@@ -316,10 +285,10 @@ public class Chessboard extends Canvas implements StateChangeListener {
                     y_side_to_move = innerYOffset - 11;
                 }
             }
-            gc.beginPath();
-            gc.setFill(boardStyle.getLightSquareColor());
-            gc.rect(x_side_to_move, y_side_to_move, 4,4);
-            gc.fill();
+            graphicsContext.beginPath();
+            graphicsContext.setFill(boardStyle.getLightSquareColor());
+            graphicsContext.rect(x_side_to_move, y_side_to_move, 4,4);
+            graphicsContext.fill();
         }
 
         // draw grabbed piece
@@ -327,7 +296,7 @@ public class Chessboard extends Canvas implements StateChangeListener {
             int offset = squareSize / 2;
             Image pieceImage = pieceImageProvider.getImage(grabbedPiece.getPiece(),
                     (int) (squareSize * this.outputScaleX), boardStyle.getPieceStyle());
-            gc.drawImage(pieceImage, grabbedPiece.getCurrentXLocation() - offset,
+            graphicsContext.drawImage(pieceImage, grabbedPiece.getCurrentXLocation() - offset,
                     grabbedPiece.getCurrentYLocation() - offset,squareSize, squareSize);
         }
 

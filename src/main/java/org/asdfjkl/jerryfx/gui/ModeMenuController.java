@@ -42,20 +42,20 @@ public class ModeMenuController implements StateChangeListener {
         this.engineOutputView = engineOutputView;
     }
 
-    public void handleEngineInfo(String s) {
+    public void handleEngineInfo(String value) {
 
-        if(s.startsWith("INFO")) {
+        if(value.startsWith("INFO")) {
             //"INFO |Stockfish 12 (Level MAX)|zobrist|145.081 kn/s||(#0)  23. Be7#||||"
-            String[] sSplit = s.split("\\|");
-            if(gameModel.getGame().getCurrentNode().getBoard().isCheckmate() && sSplit.length > 1) {
-                String sTemp = "|" + sSplit[1] + "||||(#0)|";
-                this.engineOutputView.setText(sTemp);
+            String[] valueSplit = value.split("\\|");
+            if(gameModel.getGame().getCurrentNode().getBoard().isCheckmate() && valueSplit.length > 1) {
+                String outputViewValue = "|" + valueSplit[1] + "||||(#0)|";
+                this.engineOutputView.setText(outputViewValue);
             } else {
-                this.engineOutputView.setText(s.substring(5));
+                this.engineOutputView.setText(value.substring(5));
             }
         }
-        if(s.startsWith("BESTMOVE")) {
-            handleBestMove(s);
+        if(value.startsWith("BESTMOVE")) {
+            handleBestMove(value);
         }
     }
 
@@ -66,41 +66,12 @@ public class ModeMenuController implements StateChangeListener {
     public void activateAnalysisMode() {
 
         // first change gamestate and reset engine
-        if(gameModel.activeEngine.supportsUciLimitStrength()) {
-            gameModel.activeEngine.setUciLimitStrength(false);
-        }
-        engineController.sendCommand("stop");
-        engineController.sendCommand("quit");
-        String cmdEngine = gameModel.activeEngine.getPath();
-        engineController.sendCommand("start "+cmdEngine);
-        engineController.sendCommand("uci");
-        engineController.sendCommand("ucinewgame");
-        for(EngineOption enOpt : gameModel.activeEngine.options) {
-            if(enOpt.isNotDefault()) {
-                engineController.sendCommand(enOpt.toUciCommand());
-            }
-        }
+        engineController.resetEngine(gameModel);
         if(gameModel.activeEngine.supportsMultiPV()) {
             engineController.sendCommand("setoption name MultiPV value " + gameModel.getMultiPv());
         }
         gameModel.setMode(GameModel.MODE_ANALYSIS);
         gameModel.triggerStateChange();
-    }
-
-    public void activateEnterMovesMode() {
-        engineController.sendCommand("stop");
-        engineController.sendCommand("quit");
-        gameModel.setMode(GameModel.MODE_ENTER_MOVES);
-        gameModel.triggerStateChange();
-    }
-
-    private void handleStateChangeAnalysis() {
-
-        String fen = gameModel.getGame().getCurrentNode().getBoard().fen();
-        engineController.sendCommand("stop");
-        engineController.sendCommand("position fen "+fen);
-        engineController.sendCommand("go infinite");
-
     }
 
     private void handleStateChangeGameAnalysis() {
@@ -135,7 +106,7 @@ public class ModeMenuController implements StateChangeListener {
         if(!continueAnalysis) {
             // we are at the root or found a book move
             gameModel.getGame().setTreeWasChanged(true);
-            activateEnterMovesMode();
+            engineController.activateEnterMovesMode(gameModel);
             //FlatAlert alert = new FlatAlert(Alert.AlertType.INFORMATION);
 
             FlatAlert alert = new FlatAlert(Alert.AlertType.INFORMATION);
@@ -156,18 +127,10 @@ public class ModeMenuController implements StateChangeListener {
 
     public void activatePlayWhiteMode() {
         // first change gamestate and reset engine
-        if(gameModel.activeEngine.supportsUciLimitStrength()) {
-            gameModel.activeEngine.setUciLimitStrength(true);
-        }
-        engineController.sendCommand("stop");
-        engineController.sendCommand("quit");
-        String cmdEngine = gameModel.activeEngine.getPath();
-        engineController.sendCommand("start "+cmdEngine);
-        engineController.sendCommand("uci");
-        engineController.sendCommand("ucinewgame");
-        for(EngineOption enOpt : gameModel.activeEngine.options) {
-            if(enOpt.isNotDefault()) {
-                engineController.sendCommand(enOpt.toUciCommand());
+        engineController.restartGame(true, gameModel);
+        for(EngineOption engineOption : gameModel.activeEngine.options) {
+            if(engineOption.isNotDefault()) {
+                engineController.sendCommand(engineOption.toUciCommand());
             }
         }
         if(gameModel.activeEngine.isInternal()) {
@@ -209,20 +172,7 @@ public class ModeMenuController implements StateChangeListener {
 
     public void activatePlayoutPositionMode() {
         // first change gamestate and reset engine
-        if(gameModel.activeEngine.supportsUciLimitStrength()) {
-            gameModel.activeEngine.setUciLimitStrength(false);
-        }
-        engineController.sendCommand("stop");
-        engineController.sendCommand("quit");
-        String cmdEngine = gameModel.activeEngine.getPath();
-        engineController.sendCommand("start "+cmdEngine);
-        engineController.sendCommand("uci");
-        engineController.sendCommand("ucinewgame");
-        for(EngineOption enOpt : gameModel.activeEngine.options) {
-            if(enOpt.isNotDefault()) {
-                engineController.sendCommand(enOpt.toUciCommand());
-            }
-        }
+        engineController.resetEngine(gameModel);
         // trigger statechange
         gameModel.setMode(GameModel.MODE_PLAYOUT_POSITION);
         gameModel.setFlipBoard(false);
@@ -236,15 +186,7 @@ public class ModeMenuController implements StateChangeListener {
         gameModel.getGame().removeAllAnnotations();
         gameModel.getGame().setTreeWasChanged(true);
 
-        if(gameModel.activeEngine.supportsUciLimitStrength()) {
-            gameModel.activeEngine.setUciLimitStrength(false);
-        }
-        engineController.sendCommand("stop");
-        engineController.sendCommand("quit");
-        String cmdEngine = gameModel.activeEngine.getPath();
-        engineController.sendCommand("start "+cmdEngine);
-        engineController.sendCommand("uci");
-        engineController.sendCommand("ucinewgame");
+        engineController.restartGame(false, gameModel);
         if(gameModel.activeEngine.supportsMultiPV()) {
             engineController.sendCommand("setoption name MultiPV value 1");
         }
@@ -338,12 +280,12 @@ public class ModeMenuController implements StateChangeListener {
             try {
                 GameNode next = new GameNode();
                 Board board = currentNode.getBoard().makeCopy();
-                Move m = new Move(uciMove);
-                if(!board.isLegal(m)) {
+                Move move = new Move(uciMove);
+                if(!board.isLegal(move)) {
                     break;
                 }
-                board.apply(m);
-                next.setMove(m);
+                board.apply(move);
+                next.setMove(move);
                 next.setBoard(board);
                 next.setParent(currentNode);
                 // to avoid bugs when incoherent information is
@@ -410,13 +352,13 @@ public class ModeMenuController implements StateChangeListener {
             // todo: catch Exceptions!
             String uci = bestmoveItems[1].split(" ")[0];
             Move m = new Move(uci);
-            Board b = gameModel.getGame().getCurrentNode().getBoard();
-            if (b.isLegal(m)) {
-                if(mode == GameModel.MODE_PLAY_WHITE && b.turn == CONSTANTS.BLACK) {
+            Board board = gameModel.getGame().getCurrentNode().getBoard();
+            if (board.isLegal(m)) {
+                if(mode == GameModel.MODE_PLAY_WHITE && board.turn == CONSTANTS.BLACK) {
                     gameModel.getGame().applyMove(m);
                     gameModel.triggerStateChange();
                 }
-                if(mode == GameModel.MODE_PLAY_BLACK && b.turn == CONSTANTS.WHITE) {
+                if(mode == GameModel.MODE_PLAY_BLACK && board.turn == CONSTANTS.WHITE) {
                     gameModel.getGame().applyMove(m);
                     gameModel.triggerStateChange();
                 }
@@ -484,19 +426,13 @@ public class ModeMenuController implements StateChangeListener {
 
                                 addBestPv(pvMoves);
 
-                                NumberFormat nf = NumberFormat.getNumberInstance(Locale.ENGLISH);
-                                DecimalFormat decim = (DecimalFormat) nf;
-                                decim.applyPattern("0.00");
-                                String sCurrentBest = decim.format(gameModel.currentBestEval / 100.0);
-                                String sChildBest = decim.format(gameModel.childBestEval / 100.0);
+                                NumberFormat numberFormat = NumberFormat.getNumberInstance(Locale.ENGLISH);
+                                DecimalFormat decimalFormat = (DecimalFormat) numberFormat;
+                                decimalFormat.applyPattern("0.00");
+                                String currentBest = decimalFormat.format(gameModel.currentBestEval / 100.0);
+                                String childBest = decimalFormat.format(gameModel.childBestEval / 100.0);
 
-                                ArrayList<GameNode> vars = gameModel.getGame().getCurrentNode().getVariations();
-                                if (vars != null && vars.size() > 1) {
-                                    GameNode child0 = gameModel.getGame().getCurrentNode().getVariation(0);
-                                    child0.setComment(sChildBest);
-                                    GameNode child1 = gameModel.getGame().getCurrentNode().getVariation(1);
-                                    child1.setComment(sCurrentBest);
-                                }
+                                setGameBestComments(currentBest, childBest);
                             }
                         }
                     }
@@ -509,22 +445,16 @@ public class ModeMenuController implements StateChangeListener {
                         NumberFormat nf = NumberFormat.getNumberInstance(Locale.ENGLISH);
                         DecimalFormat decim = (DecimalFormat) nf;
                         decim.applyPattern("0.00");
-                        String sChildBest = decim.format(gameModel.childBestEval / 100.0);
+                        String childBest = decim.format(gameModel.childBestEval / 100.0);
 
-                        String sCurrentBest = "";
+                        String currentBest = "";
                         if (turn == CONSTANTS.WHITE) {
-                            sCurrentBest = "#" + (Math.abs(gameModel.currentMateInMoves));
+                            currentBest = "#" + (Math.abs(gameModel.currentMateInMoves));
                         } else {
-                            sCurrentBest = "#-" + (Math.abs(gameModel.currentMateInMoves));
+                            currentBest = "#-" + (Math.abs(gameModel.currentMateInMoves));
                         }
 
-                        ArrayList<GameNode> vars = gameModel.getGame().getCurrentNode().getVariations();
-                        if (vars != null && vars.size() > 1) {
-                            GameNode child0 = gameModel.getGame().getCurrentNode().getVariation(0);
-                            child0.setComment(sChildBest);
-                            GameNode child1 = gameModel.getGame().getCurrentNode().getVariation(1);
-                            child1.setComment(sCurrentBest);
-                        }
+                        setGameBestComments(currentBest, childBest);
                     }
 
                     if (!gameModel.currentIsMate && gameModel.childIsMate) {
@@ -535,22 +465,16 @@ public class ModeMenuController implements StateChangeListener {
                         NumberFormat nf = NumberFormat.getNumberInstance(Locale.ENGLISH);
                         DecimalFormat decim = (DecimalFormat) nf;
                         decim.applyPattern("0.00");
-                        String sCurrentBest = decim.format(gameModel.currentBestEval / 100.0);
+                        String currentBest = decim.format(gameModel.currentBestEval / 100.0);
 
-                        String sChildBest = "";
+                        String childBest = "";
                         if (turn == CONSTANTS.WHITE) {
-                            sChildBest = "#-" + (Math.abs(gameModel.childMateInMoves));
+                            childBest = "#-" + (Math.abs(gameModel.childMateInMoves));
                         } else {
-                            sChildBest = "#" + (Math.abs(gameModel.childMateInMoves));
+                            childBest = "#" + (Math.abs(gameModel.childMateInMoves));
                         }
 
-                        ArrayList<GameNode> vars = gameModel.getGame().getCurrentNode().getVariations();
-                        if (vars != null && vars.size() > 1) {
-                            GameNode child0 = gameModel.getGame().getCurrentNode().getVariation(0);
-                            child0.setComment(sChildBest);
-                            GameNode child1 = gameModel.getGame().getCurrentNode().getVariation(1);
-                            child1.setComment(sCurrentBest);
-                        }
+                        setGameBestComments(currentBest, childBest);
                     }
 
                     if (gameModel.currentIsMate && gameModel.childIsMate) {
@@ -562,23 +486,17 @@ public class ModeMenuController implements StateChangeListener {
                             String[] pvMoves = gameModel.currentBestPv.split(" ");
                             addBestPv(pvMoves);
 
-                            String sCurrentBest = "";
-                            String sChildBest = "";
+                            String currentBest = "";
+                            String childBest = "";
                             if (turn == CONSTANTS.WHITE) {
-                                sCurrentBest = "#" + (Math.abs(gameModel.currentMateInMoves));
-                                sChildBest = "#-" + (Math.abs(gameModel.childMateInMoves));
+                                currentBest = "#" + (Math.abs(gameModel.currentMateInMoves));
+                                childBest = "#-" + (Math.abs(gameModel.childMateInMoves));
                             } else {
-                                sCurrentBest = "#-" + (Math.abs(gameModel.currentMateInMoves));
-                                sChildBest = "#" + (Math.abs(gameModel.childMateInMoves));
+                                currentBest = "#-" + (Math.abs(gameModel.currentMateInMoves));
+                                childBest = "#" + (Math.abs(gameModel.childMateInMoves));
                             }
 
-                            ArrayList<GameNode> vars = gameModel.getGame().getCurrentNode().getVariations();
-                            if (vars != null && vars.size() > 1) {
-                                GameNode child0 = gameModel.getGame().getCurrentNode().getVariation(0);
-                                child0.setComment(sChildBest);
-                                GameNode child1 = gameModel.getGame().getCurrentNode().getVariation(1);
-                                child1.setComment(sCurrentBest);
-                            }
+                            setGameBestComments(currentBest, childBest);
                         }
                     }
                 }
@@ -587,6 +505,16 @@ public class ModeMenuController implements StateChangeListener {
             gameModel.triggerStateChange();
         }
 
+    }
+
+    private void setGameBestComments(String currentBest, String childBest) {
+        ArrayList<GameNode> vars = gameModel.getGame().getCurrentNode().getVariations();
+        if (vars != null && vars.size() > 1) {
+            GameNode child0 = gameModel.getGame().getCurrentNode().getVariation(0);
+            child0.setComment(childBest);
+            GameNode child1 = gameModel.getGame().getCurrentNode().getVariation(1);
+            child1.setComment(currentBest);
+        }
     }
 
     @Override
@@ -653,7 +581,7 @@ public class ModeMenuController implements StateChangeListener {
         } else {
             gameModel.doNotNotifyAboutResult = false;
             if (mode == GameModel.MODE_ANALYSIS) {
-                handleStateChangeAnalysis();
+                engineController.handleStateChangeAnalysis(gameModel);
             }
             if (mode == GameModel.MODE_GAME_ANALYSIS) {
                 handleStateChangeGameAnalysis();

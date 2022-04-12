@@ -3,7 +3,7 @@ package org.asdfjkl.jerryfx.gui;
 import java.util.Date;
 import java.util.Random;
 
-public class Util {
+public class RandomFileNameGenerator {
 
     public static String getRandomFilename() {
 

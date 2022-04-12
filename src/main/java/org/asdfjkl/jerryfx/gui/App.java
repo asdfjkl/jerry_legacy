@@ -375,7 +375,7 @@ public class App extends Application implements StateChangeListener {
         EditMenuController editMenuController = new EditMenuController(gameModel);
 
         gameModel.addListener(modeMenuController);
-        modeMenuController.activateEnterMovesMode();
+        engineController.activateEnterMovesMode(gameModel);
 
         itmSaveCurrentGameAs.setOnAction(e -> {
            gameMenuController.handleSaveCurrentGame();
@@ -442,7 +442,7 @@ public class App extends Application implements StateChangeListener {
         itmEnterMoves.setOnAction(actionEvent -> {
             tglEngineOnOff.setSelected(false);
             tglEngineOnOff.setText("Off");
-            modeMenuController.activateEnterMovesMode();
+            engineController.activateEnterMovesMode(gameModel);
         });
 
         itmFullGameAnalysis.setOnAction(actionEvent -> {
@@ -457,7 +457,7 @@ public class App extends Application implements StateChangeListener {
             } else {
                 itmEnterMoves.setSelected(true);
                 tglEngineOnOff.setText("Off");
-                modeMenuController.activateEnterMovesMode();
+                engineController.activateEnterMovesMode(gameModel);
             }
         });
 
@@ -768,7 +768,7 @@ public class App extends Application implements StateChangeListener {
                 // enter moves mode
                 tglEngineOnOff.setSelected(false);
                 tglEngineOnOff.setText("Off");
-                modeMenuController.activateEnterMovesMode();
+                engineController.activateEnterMovesMode(gameModel);
             }
             if(event.getCode() == KeyCode.F11) {
                 stage.setFullScreen(true);
@@ -969,7 +969,7 @@ public class App extends Application implements StateChangeListener {
                     modeMenuController.activatePlayBlackMode();
                 }
             } else {
-                modeMenuController.activateEnterMovesMode();
+                engineController.activateEnterMovesMode(gameModel);
             }
         }
     }

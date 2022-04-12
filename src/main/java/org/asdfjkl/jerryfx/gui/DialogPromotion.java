@@ -38,7 +38,7 @@ public class DialogPromotion {
 
     public static int show(boolean playerColor, int pieceStyle, int colorTheme) {
 
-        PieceImageProvider provider = new PieceImageProvider();
+        PieceImageProvider provider = PieceImageProvider.getInstance();
 
         choice = CONSTANTS.EMPTY;
 

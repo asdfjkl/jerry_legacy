@@ -23,7 +23,7 @@ import java.util.ArrayList;
 import java.lang.Math;
 
 
-public class Board {
+public class Board implements Cloneable {
 
     public boolean turn;
     public int halfmoveClock;
@@ -381,6 +381,16 @@ public class Board {
     }
 
     public Board makeCopy() {
+        Board cloneBoard = null;
+        try {
+            cloneBoard = (Board) this.clone();
+        } catch (CloneNotSupportedException e) {
+            e.printStackTrace();
+        }
+        return cloneBoard;
+    }
+
+   /* public Board makeCopy() {
 
         Board b = new Board();
 
@@ -425,7 +435,7 @@ public class Board {
 
         return b;
 
-    }
+    }*/
 
     public String fen() {
         String fenString = "";

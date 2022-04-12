@@ -28,7 +28,7 @@ import java.awt.*;
 import static org.asdfjkl.jerryfx.lib.CONSTANTS.EMPTY;
 import static org.asdfjkl.jerryfx.lib.CONSTANTS.FRINGE;
 
-public class ShowAppearanceBoard extends Canvas {
+public class ShowAppearanceBoard extends CanvasProperties {
 
         final BoardStyle boardStyle;
         final double outputScaleX;
@@ -49,47 +49,14 @@ public class ShowAppearanceBoard extends Canvas {
     public ShowAppearanceBoard() {
 
             this.boardStyle = new BoardStyle();
-            this.pieceImageProvider = new PieceImageProvider();
+            this.pieceImageProvider = PieceImageProvider.getInstance();
             this.outputScaleX = Screen.getPrimary().getOutputScaleX();
             this.board = new Board(true);
 
         }
 
-
-        @Override
-        public boolean isResizable() {
-            return true;
-        }
-
-        @Override
-        public double maxHeight(double width) {
-            return Double.POSITIVE_INFINITY;
-        }
-
-        @Override
-        public double maxWidth(double height) {
-            return Double.POSITIVE_INFINITY;
-        }
-
-        @Override
-        public double minWidth(double height) {
-            return 50D;
-        }
-
-        @Override
-        public double minHeight(double width) {
-            return 50D;
-        }
-
-        @Override
-        public void resize(double width, double height) {
-            this.setWidth(width);
-            this.setHeight(height);
-
-            updateCanvas();
-        }
-
-        public void updateCanvas() {
+    @Override
+    public void updateCanvas() {
 
             GraphicsContext gc = this.getGraphicsContext2D();
 

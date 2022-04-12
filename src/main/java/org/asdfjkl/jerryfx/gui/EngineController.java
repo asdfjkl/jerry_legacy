@@ -31,11 +31,11 @@ public class EngineController {
 
     EngineThread engineThread;
     final BlockingQueue<String> cmdQueue = new LinkedBlockingQueue<String>();;
-    ModeMenuController mmc = null;
+    ModeMenuController modeMenuController = null;
 
     public EngineController(ModeMenuController modeMenuController) {
 
-        mmc = modeMenuController;
+        this.modeMenuController = modeMenuController;
 
     }
 
@@ -53,7 +53,7 @@ public class EngineController {
                         @Override
                         public void run() {
                             String value = count.getAndSet(null);
-                            mmc.handleEngineInfo(value);
+                            modeMenuController.handleEngineInfo(value);
                         }
                     });
                 }
@@ -119,6 +119,43 @@ public class EngineController {
             cmdQueue.put("go movetime "+milliseconds);
         } catch (InterruptedException e) {
             e.printStackTrace();
+        }
+    }
+
+    void restartGame(Boolean setUciLimitStrength, GameModel gameModel) {
+        if(gameModel.activeEngine.supportsUciLimitStrength()) {
+            gameModel.activeEngine.setUciLimitStrength(setUciLimitStrength);
+        }
+        sendCommand("stop");
+        sendCommand("quit");
+        String cmdEngine = gameModel.activeEngine.getPath();
+        sendCommand("start "+cmdEngine);
+        sendCommand("uci");
+        sendCommand("ucinewgame");
+    }
+
+    public void activateEnterMovesMode(GameModel gameModel) {
+        sendCommand("stop");
+        sendCommand("quit");
+        gameModel.setMode(GameModel.MODE_ENTER_MOVES);
+        gameModel.triggerStateChange();
+    }
+
+    void handleStateChangeAnalysis(GameModel gameModel) {
+
+        String fen = gameModel.getGame().getCurrentNode().getBoard().fen();
+        sendCommand("stop");
+        sendCommand("position fen "+fen);
+        sendCommand("go infinite");
+
+    }
+
+    void resetEngine(GameModel gameModel) {
+        restartGame(false, gameModel);
+        for(EngineOption enOpt : gameModel.activeEngine.options) {
+            if(enOpt.isNotDefault()) {
+                sendCommand(enOpt.toUciCommand());
+            }
         }
     }
 
