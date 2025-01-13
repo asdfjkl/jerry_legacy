@@ -38,7 +38,6 @@ public class App extends Application implements StateChangeListener {
     Text txtGameData;
     GameModel gameModel;
     EngineOutputView engineOutputView;
-    EngineController engineController;
 
     ToggleButton tglEngineOnOff;
 
@@ -369,9 +368,12 @@ public class App extends Application implements StateChangeListener {
 
         // connect mode controller
         engineOutputView = new EngineOutputView(gameModel, txtEngineOut);
+        // This will set the name of the restored active engine in the
+        // engineOutputView. Previously it was always "Stockfish (internal)
+        // at startup.
+        engineOutputView.setEngineId(gameModel.getActiveEngineID());
         modeMenuController = new ModeMenuController(gameModel, engineOutputView);
-        engineController = new EngineController(modeMenuController);
-        modeMenuController.setEngineController(engineController);
+        // Creation of engineController has been moved inside ModeMenuController.
 
         gameModel.addListener(engineOutputView);
 
@@ -468,14 +470,14 @@ public class App extends Application implements StateChangeListener {
         btnAddEngineLine.setOnAction(actionEvent -> {
             int currentMultiPv = gameModel.getMultiPv();
             gameModel.setMultiPv(currentMultiPv+1);
-            engineController.sendCommand("setoption name MultiPV value " + gameModel.getMultiPv());
+            modeMenuController.engineSetOptionMultiPV(gameModel.getMultiPv());
             gameModel.triggerStateChange();
         });
 
         btnRemoveEngineLine.setOnAction(actionEvent -> {
             int currentMultiPv = gameModel.getMultiPv();
             gameModel.setMultiPv(currentMultiPv-1);
-            engineController.sendCommand("setoption name MultiPV value " + gameModel.getMultiPv());
+            modeMenuController.engineSetOptionMultiPV(gameModel.getMultiPv());
             gameModel.triggerStateChange();
         });
 
@@ -927,7 +929,7 @@ public class App extends Application implements StateChangeListener {
         gameModel.saveTheme();
         gameModel.savePaths();
 
-        engineController.sendCommand("quit");
+        modeMenuController.stopEngine();
         ArrayList<Task> runningTasks = gameModel.getPgnDatabase().getRunningTasks();
         for (Task task : runningTasks) {
             task.cancel();

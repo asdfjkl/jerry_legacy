@@ -110,6 +110,7 @@ public class DialogEngines {
 
         stage = new Stage();
         stage.initModality(Modality.APPLICATION_MODAL);
+        stage.setTitle("Chessengines:");
 
         btnOk = new Button();
         btnOk.setText("OK");
@@ -120,7 +121,8 @@ public class DialogEngines {
 
         HBox hbButtons = new HBox();
         hbButtons.getChildren().addAll(spacer, btnOk, btnCancel);
-        hbButtons.setHgrow(spacer, Priority.ALWAYS);
+	// Got a "warning:static method should be called in a static way" here.
+        HBox.setHgrow(spacer, Priority.ALWAYS);
         hbButtons.setSpacing(10);
 
         VBox vbButtonsRight = new VBox();
@@ -134,17 +136,17 @@ public class DialogEngines {
         vbButtonsRight.getChildren().addAll(btnAdd, btnRemove,
                 spacer1,
                 btnEditParameters, btnResetParameters);
-        vbButtonsRight.setVgrow(spacer1, Priority.ALWAYS);
+        VBox.setVgrow(spacer1, Priority.ALWAYS);
         vbButtonsRight.setSpacing(10);
         vbButtonsRight.setPadding( new Insets(0,0,0,10));
 
         HBox hbMain = new HBox();
         hbMain.getChildren().addAll(engineListView, vbButtonsRight);
-        hbMain.setHgrow(engineListView, Priority.ALWAYS);
+        HBox.setHgrow(engineListView, Priority.ALWAYS);
 
         VBox vbMain = new VBox();
         vbMain.getChildren().addAll(hbMain, hbButtons);
-        vbMain.setVgrow(hbMain, Priority.ALWAYS);
+        VBox.setVgrow(hbMain, Priority.ALWAYS);
         vbMain.setSpacing(10);
         vbMain.setPadding( new Insets(10));
 
@@ -269,8 +271,6 @@ public class DialogEngines {
             try {
                 String line;
 
-                //System.err.println("file != null, starting engine");
-
                 Process engineProcess = Runtime.getRuntime().exec(file.getAbsolutePath());
                 //OutputStream stdout = engineProcess.getOutputStream ();
                 //InputStream stderr = engineProcess.getErrorStream ();
@@ -280,47 +280,47 @@ public class DialogEngines {
                 BufferedWriter bro = new BufferedWriter (new OutputStreamWriter(engineProcess.getOutputStream()));
                 BufferedReader bre = new BufferedReader (new InputStreamReader(engineProcess.getErrorStream()));
 
-                for(int i=0;i<20;i++) {
-                    try {
-                        Thread.sleep(40);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                }
-
+                // Ask the engine if it's a UCI engine and ask for it's
+                // configuration parameters
                 bro.write("uci\n");
                 bro.flush();
 
-                for(int i=0;i<20;i++) {
-                    try {
-                        Thread.sleep(40);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
+                // Waiting for the bri inputbuffer to be filled with engine options
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
                 }
 
                 Engine engine = new Engine();
                 engine.setPath(file.getAbsolutePath());
-
                 while(bri.ready()) {
-                    EngineOption engineOption = new EngineOption();
                     line = bri.readLine();
-                    //System.err.println("option: " + line);
+                    if(line.equals("uciok")){
+                        // No more options
+                        break;
+                    }
                     if(line.startsWith("id name")) {
                         engine.setName(line.substring(7).trim());
+                        continue;
                     }
+                    if(line.startsWith("id author")) {
+                        continue;
+                    }
+                    EngineOption engineOption = new EngineOption();
                     boolean parsed = engineOption.parseUciOptionString(line);
                     if(parsed) {
                         engine.options.add(engineOption);
                     }
                 }
-                //bro.write("quit\n");
+                // This line with the quit command was outcommented, but I think
+                // it could be good if the engine process itself has control of
+                // how it exits, it may have some resources allocated that needs
+                // to be closed down in a gentle way, instead of just calling
+                // destroy further below.
+                bro.write("stop\n");
+                bro.write("quit\n");
                 bro.flush();
-
-                bri.close();
-                bro.close();
-                bre.close();
-
                 try {
                     boolean finished = engineProcess.waitFor(500, TimeUnit.MILLISECONDS);
                     if(!finished) {
@@ -329,6 +329,10 @@ public class DialogEngines {
                 } catch(InterruptedException e) {
                     e.printStackTrace();
                 }
+
+                bri.close();
+                bro.close();
+                bre.close();
 
                 if(engine.getName() != null && !engine.getName().isEmpty()) {
                     engineList.add(engine);
